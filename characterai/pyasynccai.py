@@ -3,8 +3,11 @@ import websockets
 import tls_client
 import asyncio
 import json
+import logging
 
 from characterai import errors
+
+_log = logging.getLogger(__name__)
 
 __all__ = ['PyCAI', 'PyAsyncCAI']
 
@@ -12,11 +15,10 @@ class PyAsyncCAI:
     def __init__(
         self, token: str = None, plus: bool = False
     ):
+        _log.debug("Initializing PyAsyncCAI")
         self.token = token
 
-        if plus: sub = 'plus'
-        else: sub = 'beta'
-
+        sub = 'plus' if plus else 'beta'
         self.session = tls_client.Session(
             client_identifier='chrome112'
         )
@@ -36,6 +38,7 @@ class PyAsyncCAI:
         data: dict = None, split: bool = False,
         neo: bool = False
     ):
+        _log.debug(f"Making request to URL: {url} with method: {method}")
         if neo:
             link = f'https://neo.character.ai/{url}'
         else:
@@ -82,12 +85,14 @@ class PyAsyncCAI:
             return data
 
     async def ping(self):
+        _log.debug("Pinging server")
         return self.session.get(
             'https://neo.character.ai/ping/'
         ).json()
 
     @asynccontextmanager
     async def connect(self, token: str = None):
+        _log.debug("Connecting to server")
         try:
             if token == None: key = self.token
             else: key = token
@@ -104,6 +109,7 @@ class PyAsyncCAI:
             
             yield PyAsyncCAI.chat2(key, self.ws, self.session)
         finally:
+            _log.debug("Closing connection")
             await self.ws.close()
 
     class user:
@@ -121,8 +127,10 @@ class PyAsyncCAI:
         ):
             self.token = token
             self.session = session
+            _log.debug("User object initialized")
 
         async def info(self, *, token: str = None):
+            _log.debug("Getting user info")
             return await PyAsyncCAI.request(
                 'chat/user/', self.session, token=token
             )
@@ -131,6 +139,7 @@ class PyAsyncCAI:
             self, username: str, *,
             token: str = None
         ):
+            _log.debug(f"Getting profile for username: {username}")
             return await PyAsyncCAI.request(
                 'chat/user/public/', self.session,
                 token=token, method='POST',
@@ -140,21 +149,25 @@ class PyAsyncCAI:
             )
 
         async def followers(self, *, token: str = None):
+            _log.debug("Getting followers")
             return await PyAsyncCAI.request(
                 'chat/user/followers/', self.session, token=token
             )
 
         async def following(self, *, token: str = None):
+            _log.debug("Getting following")
             return await PyAsyncCAI.request(
                 'chat/user/following/', self.session, token=token
             )
         
         async def recent(self, *, token: str = None):
+            _log.debug("Getting recent characters")
             return await PyAsyncCAI.request(
                 'chat/characters/recent/', self.session, token=token
             )
 
         async def characters(self, *, token: str = None):
+            _log.debug("Getting characters")
             return await PyAsyncCAI.request(
                 'chat/characters/?scope=user',
                 self.session, token=token
@@ -165,6 +178,7 @@ class PyAsyncCAI:
             *, token: str = None,
             **kwargs
         ):
+            _log.debug(f"Updating user with username: {username}, additional data: {kwargs}")
             return await PyAsyncCAI.request(
                 'chat/user/update/', self.session,
                 token=token, method='POST',
@@ -173,7 +187,6 @@ class PyAsyncCAI:
                     **kwargs
                 }
             )
-
     class post:
         """Just a responses from site for posts
         
@@ -193,10 +206,12 @@ class PyAsyncCAI:
         ):
             self.token = token
             self.session = session
+            _log.debug("Post object initialized")
 
         async def get_post(
             self, post_id: str
         ):
+            _log.debug(f"Getting post with ID: {post_id}")
             return await PyAsyncCAI.request(
                 f'chat/post/?post={post_id}',
                 self.session
@@ -206,6 +221,7 @@ class PyAsyncCAI:
             self, *, posts_page: int = 1,
             posts_to_load: int = 5, token: str = None
         ):
+            _log.debug(f"Getting my posts, page: {posts_page}, posts to load: {posts_to_load}")
             return await PyAsyncCAI.request(
                 f'chat/posts/user/?scope=user&page={posts_page}'
                 f'&posts_to_load={posts_to_load}/',
@@ -216,6 +232,7 @@ class PyAsyncCAI:
             self, username: str, *,
             posts_page: int = 1, posts_to_load: int = 5,
         ):
+            _log.debug(f"Getting posts for username: {username}, page: {posts_page}, posts to load: {posts_to_load}")
             return await PyAsyncCAI.request(
                 f'chat/posts/user/?username={username}'
                 f'&page={posts_page}&posts_to_load={posts_to_load}/',
@@ -226,6 +243,7 @@ class PyAsyncCAI:
             self, post_external_id: str,
             *, token: str = None
         ):
+            _log.debug(f"Upvoting post with external ID: {post_external_id}")
             return await PyAsyncCAI.request(
                 'chat/post/upvote/', self.session,
                 token=token, method='POST',
@@ -238,6 +256,7 @@ class PyAsyncCAI:
             self, post_external_id: str,
             *, token: str = None
         ):
+            _log.debug(f"Undoing upvote for post with external ID: {post_external_id}")
             return await PyAsyncCAI.request(
                 'chat/post/undo-upvote/', self.session,
                 token=token, method='POST',
@@ -250,6 +269,7 @@ class PyAsyncCAI:
             self, post_id: str, text: str, *,
             parent_uuid: str = None, token: str = None
         ):
+            _log.debug(f"Sending comment to post with ID: {post_id}, text: {text}, parent UUID: {parent_uuid}")
             return await PyAsyncCAI.request(
                 'chat/comment/create/', self.session,
                 token=token, method='POST',
@@ -264,6 +284,7 @@ class PyAsyncCAI:
             self, message_id: int, post_id: str,
             *, token: str = None
         ):
+            _log.debug(f"Deleting comment with message ID: {message_id} from post with ID: {post_id}")
             return await PyAsyncCAI.request(
                 'chat/comment/delete/', self.session,
                 token=token, method='POST',
@@ -279,6 +300,7 @@ class PyAsyncCAI:
             post_visibility: str = 'PUBLIC',
             token: str = None, **kwargs
         ):
+            _log.debug(f"Creating post with type: {post_type}, external ID: {external_id}, title: {title}, text: {text}, visibility: {post_visibility}, additional data: {kwargs}")
             if post_type == 'POST':
                 post_link = 'chat/post/create/'
                 data = {
@@ -307,6 +329,7 @@ class PyAsyncCAI:
             self, post_id: str, *,
             token: str = None
         ):
+            _log.debug(f"Deleting post with ID: {post_id}")
             return await PyAsyncCAI.request(
                 'chat/post/delete/', self.session,
                 token=token, method='POST',
@@ -316,6 +339,7 @@ class PyAsyncCAI:
             )
 
         async def get_topics(self):
+            _log.debug("Getting topics")
             return await PyAsyncCAI.request(
                 'chat/topics/', self.session
             )
@@ -325,6 +349,7 @@ class PyAsyncCAI:
             load: int = 5, sort: str = 'top', *,
             token: str = None
         ):
+            _log.debug(f"Getting feed for topic: {topic}, page: {num}, posts to load: {load}, sort: {sort}")
             return await PyAsyncCAI.request(
                 f'chat/posts/?topic={topic}&page={num}'
                 f'&posts_to_load={load}&sort={sort}',
@@ -349,6 +374,7 @@ class PyAsyncCAI:
         ):
             self.token = token
             self.session = session
+            _log.debug("Character object initialized")
 
         async def create(
             self, greeting: str, identifier: str,
@@ -360,6 +386,7 @@ class PyAsyncCAI:
             visibility: str = 'PUBLIC',
             token: str = None, **kwargs
         ):
+            _log.debug(f"Creating character with greeting: {greeting}, identifier: {identifier}, name: {name}, title: {title}, visibility: {visibility}, additional data: {kwargs}")
             return await PyAsyncCAI.request(
                 '../chat/character/create/', self.session,
                 token=token, method='POST',
@@ -388,6 +415,7 @@ class PyAsyncCAI:
             visibility: str = 'PUBLIC', *,
             token: str = None, **kwargs
         ):
+            _log.debug(f"Updating character with external ID: {external_id}, greeting: {greeting}, identifier: {identifier}, name: {name}, title: {title}, visibility: {visibility}, additional data: {kwargs}")
             return await PyAsyncCAI.request(
                 '../chat/character/update/', self.session,
                 token=token, method='POST',
@@ -404,8 +432,9 @@ class PyAsyncCAI:
                     **kwargs
                 }
             )
-        
+
         async def trending(self):
+            _log.debug("Getting trending characters")
             return await PyAsyncCAI.request(
                 'chat/characters/trending/',
                 self.session
@@ -414,12 +443,14 @@ class PyAsyncCAI:
         async def recommended(
             self, *, token: str = None
         ):
+            _log.debug("Getting recommended characters")
             return await PyAsyncCAI.request(
                 'chat/characters/recommended/',
                 self.session, token=token
             )
 
         async def categories(self):
+            _log.debug("Getting character categories")
             return await PyAsyncCAI.request(
                 'chat/character/categories/',
                 self.session
@@ -429,6 +460,7 @@ class PyAsyncCAI:
             self, char: str, *,
             token: str = None,
         ):
+            _log.debug(f"Getting info for character: {char}")
             return await PyAsyncCAI.request(
                 'chat/character/', self.session,
                 token=token, method='POST',
@@ -441,12 +473,14 @@ class PyAsyncCAI:
             self, query: str, *,
             token: str = None
         ):
+            _log.debug(f"Searching characters with query: {query}")
             return await PyAsyncCAI.request(
                 f'chat/characters/search/?query={query}/',
                 self.session, token=token
             )
 
         async def voices(self):
+            _log.debug("Getting character voices")
             return await PyAsyncCAI.request(
                 'chat/character/voices/',
                 self.session
@@ -471,12 +505,14 @@ class PyAsyncCAI:
         ):
             self.token = token
             self.session = session
+            _log.debug("Chat object initialized")
 
         async def create_room(
             self, characters: list, name: str,
             topic: str = '', *, token: str = None,
             **kwargs
         ):
+            _log.debug(f"Creating room with characters: {characters}, name: {name}, topic: {topic}, additional data: {kwargs}")
             return await PyAsyncCAI.request(
                 '../chat/room/create/', self.session,
                 token=token, method='POST',
@@ -494,6 +530,7 @@ class PyAsyncCAI:
             message_id: str, *, token: str = None,
             **kwargs
         ):
+            _log.debug(f"Rating with rate: {rate}, history_id: {history_id}, message_id: {message_id}, additional data: {kwargs}")
             if rate == 0: label = [234, 238, 241, 244] #Terrible
             elif rate == 1: label = [235, 237, 241, 244] #Bad
             elif rate == 2: label = [235, 238, 240, 244] #Good
@@ -515,6 +552,7 @@ class PyAsyncCAI:
             self, history_id: str, parent_msg_uuid: str,
             tgt: str, *, token: str = None, **kwargs
         ):
+            _log.debug(f"Getting next message for history_id: {history_id}, parent_msg_uuid: {parent_msg_uuid}, tgt: {tgt}, additional data: {kwargs}")
             response = await PyAsyncCAI.request(
                 'chat/streaming/', self.session,
                 token=token, method='POST', split=True,
@@ -530,6 +568,7 @@ class PyAsyncCAI:
             self, char: str, *, number: int = 50,
             token: str = None
         ):
+            _log.debug(f"Getting histories for character: {char}, number: {number}")
             return await PyAsyncCAI.request(
                 'chat/character/histories_v2/', self.session,
                 token=token, method='POST',
@@ -540,6 +579,7 @@ class PyAsyncCAI:
             self, history_id: str = None,
             *, token: str = None
         ):
+            _log.debug(f"Getting history for history_id: {history_id}")
             return await PyAsyncCAI.request(
                 'chat/history/msgs/user/?'
                 f'history_external_id={history_id}',
@@ -550,6 +590,7 @@ class PyAsyncCAI:
             self, char: str = None, *,
             token: str = None
         ):
+            _log.debug(f"Getting chat for character: {char}")
             return await PyAsyncCAI.request(
                 'chat/history/continue/', self.session,
                 token=token, method='POST',
@@ -562,6 +603,7 @@ class PyAsyncCAI:
             self, history_id: str, tgt: str, text: str,
             *, token: str = None, **kwargs
         ):
+            _log.debug(f"Sending message with history_id: {history_id}, tgt: {tgt}, text: {text}, additional data: {kwargs}")
             return await PyAsyncCAI.request(
                 'chat/streaming/', self.session,
                 token=token, method='POST', split=True,
@@ -577,6 +619,7 @@ class PyAsyncCAI:
             self, history_id: str, uuids_to_delete: list,
             *, token: str = None, **kwargs
         ):
+            _log.debug(f"Deleting message with history_id: {history_id}, uuids_to_delete: {uuids_to_delete}, additional data: {kwargs}")
             return await PyAsyncCAI.request(
                 'chat/history/msgs/delete/', self.session,
                 token=token, method='POST',
@@ -586,10 +629,10 @@ class PyAsyncCAI:
                     **kwargs
                 }
             )
-
         async def new_chat(
             self, char: str, *, token: str = None
         ):
+            _log.debug(f"Creating new chat for character: {char}")
             return await PyAsyncCAI.request(
                 'chat/history/create/', self.session,
                 token=token, method='POST',
@@ -625,6 +668,7 @@ class PyAsyncCAI:
             self, char: str, chat_id: str,
             parent_msg_uuid: str
         ):
+            _log.debug(f"Sending next message request for character: {char}, chat_id: {chat_id}, parent_msg_uuid: {parent_msg_uuid}")
             await self.ws.send(json.dumps({
                 'command': 'generate_turn_candidate',
                 'payload': {
@@ -644,7 +688,9 @@ class PyAsyncCAI:
                 if not response['turn']['author']['author_id'].isdigit():
                     try: is_final = response['turn']['candidates'][0]['is_final']
                     except: pass
-                    else: return response
+                    else:
+                        _log.debug(f"Received next message response: {response}")
+                        return response
 
         async def send_message(
             self, char: str, chat_id: str,
@@ -652,6 +698,8 @@ class PyAsyncCAI:
             *, turn_id: str = None, custom_id: str = None,
             candidate_id: str = None
         ):  
+            _log.debug(f"Sending message for character: {char}, chat_id: {chat_id}, text: {text}")
+            
             if custom_id != None:
                 turn_key = {
                     'turn_id': custom_id,
@@ -692,12 +740,16 @@ class PyAsyncCAI:
                 if not response['turn']['author']['author_id'].isdigit():
                     try: is_final = response['turn']['candidates'][0]['is_final']
                     except: pass
-                    else: return response
+                    else: 
+                        _log.debug(f"Received message response: {response}")
+                        return response
 
         async def new_chat(
             self, char: str, chat_id: str,
             creator_id: str, *, with_greeting: bool = True
         ):
+            _log.debug(f"Creating new chat for character: {char}, chat_id: {chat_id}, creator_id: {creator_id}")
+            
             await self.ws.send(json.dumps({
                 'command': 'create_chat',
                 'payload': {
@@ -718,12 +770,14 @@ class PyAsyncCAI:
                 raise errors.ServerError(response['comment'])
             else:
                 answer = json.loads(await self.ws.recv())
+                _log.debug(f"Received new chat response: {response}, answer: {answer}")
                 return response, answer
 
         async def get_histories(
             self, char: str = None, *,
             preview: int = 2, token: str = None
         ):
+            _log.debug(f"Getting histories for character: {char}, preview: {preview}")
             return await PyAsyncCAI.request(
                 f'chats/?character_ids={char}'
                 f'&num_preview_turns={preview}',
@@ -734,6 +788,7 @@ class PyAsyncCAI:
             self, char: str = None, *,
             token: str = None
         ):
+            _log.debug(f"Getting chat for character: {char}")
             return await PyAsyncCAI.request(
                 f'chats/recent/{char}',
                 self.session, token=token, neo=True
@@ -743,6 +798,7 @@ class PyAsyncCAI:
             self, chat_id: str = None, *,
             token: str = None
         ):
+            _log.debug(f"Getting history for chat_id: {chat_id}")
             return await PyAsyncCAI.request(
                 f'turns/{chat_id}/', self.session,
                 token=token, neo=True
@@ -753,6 +809,7 @@ class PyAsyncCAI:
             turn_id: str, candidate_id: str,
             *, token: str = None
         ):
+            _log.debug(f"Rating chat: {chat_id}, turn: {turn_id}, candidate: {candidate_id} with rate: {rate}")
             return await PyAsyncCAI.request(
                 'annotation/create', self.session,
                 token=token, method='POST', neo=True,
@@ -773,6 +830,7 @@ class PyAsyncCAI:
             self, chat_id: str, turn_ids: list,
             *, token: str = None, **kwargs
         ):
+            _log.debug(f"Deleting messages in chat: {chat_id}, turns: {turn_ids}")
             await self.ws.send(json.dumps({
                 'command':'remove_turns',
                 'payload': {
@@ -780,5 +838,6 @@ class PyAsyncCAI:
                     'turn_ids': turn_ids
                 }
             }))
-
-            return json.loads(await self.ws.recv())
+            res = await self.ws.recv()
+            _log.debug(f"Received delete message response: {res}")
+            return json.loads(res)
