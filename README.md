@@ -13,7 +13,7 @@ If you have any questions/problems/suggestions or you just want to talk about AI
 
 ## 💻 Installation
 ```bash
-pip install characterai
+pip install git+https://github.com/AdiGro/CharacterAI
 ```
 
  ᅠ 
