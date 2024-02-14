@@ -68,6 +68,10 @@ class PyAsyncCAI:
                 link, headers=headers, json=data
             )
 
+        _log.debug(f"Received response: {response}. Status code: {response.status_code}")
+        _log.debug(f"Response text: {response.text}")
+
+
         if split:
             data = json.loads(response.text.split('\n')[-2])
         else:

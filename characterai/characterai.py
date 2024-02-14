@@ -54,6 +54,7 @@ class PyCAI:
             response = session.put(link, headers=headers, json=data)
 
         data = json.loads(response.text.split("\n")[-2]) if split else response.json()
+        _log.debug(f"Response code: {response.status_code}")
         _log.debug(f"Response data: {data}")
         if str(data).startswith("{'command': 'neo_error'"):
             raise errors.ServerError(data["comment"])
@@ -320,7 +321,7 @@ class PyCAI:
             *,
             avatar_rel_path: str = "",
             base_img_prompt: str = "",
-            categories: list = [],
+            categories: list = None,
             copyable: bool = True,
             definition: str = "",
             description: str = "",
@@ -330,6 +331,8 @@ class PyCAI:
             token: str = None,
             **kwargs,
         ):
+            if categories is None:
+                categories = []
             _log.debug(
                 f"Creating character with greeting: {greeting}, identifier: {identifier}, name: {name}, additional data: {kwargs}"
             )
@@ -362,7 +365,7 @@ class PyCAI:
             identifier: str,
             name: str,
             title: str = "",
-            categories: list = [],
+            categories: list = None,
             definition: str = "",
             copyable: bool = True,
             description: str = "",
@@ -371,6 +374,8 @@ class PyCAI:
             token: str = None,
             **kwargs,
         ):
+            if categories is None:
+                categories = []
             _log.debug(
                 f"Updating character with external ID: {external_id}, greeting: {greeting}, identifier: {identifier}, name: {name}, additional data: {kwargs}"
             )
