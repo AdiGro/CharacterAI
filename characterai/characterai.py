@@ -16,7 +16,7 @@ class PyCAI:
     def __init__(self, token: str = None, plus: bool = False):
         self.token = token
 
-        sub = "plus" if plus else "beta"
+        sub = "plus" if plus else "old"
         self.session = tls_client.Session(client_identifier="chrome112")
 
         setattr(self.session, "url", f"https://{sub}.character.ai/")
